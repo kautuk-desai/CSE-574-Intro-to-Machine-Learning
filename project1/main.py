@@ -1,16 +1,20 @@
 import os
+import math
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import multivariate_normal
 
 # print the name and person number
 print('UBitName = ', 'kautukra')
 print('personNumber = ', 50247648)
-print('\n') # print section break
+print('\n')  # print section break
 
 
 # variables related to file information
 excel_sheetname = 'university_data'
 excel_filename = 'university data.xlsx'
+num_of_variables = 4
 
 # get the relative file path as the file is in data set folder
 current_dir = os.path.dirname(__file__)
@@ -62,7 +66,6 @@ print('sigma2 = ', sigma2)
 print('sigma3 = ', sigma3)
 print('sigma4 = ', sigma4)
 
-
 # calculating covariance and correlation matrices
 df_list = list();
 df_list.append(cs_score_list)
@@ -89,5 +92,55 @@ print('covarianceMat = \n', covarianceMat)
 print('correlationMat = \n', correlationMat)
 
 
+# Calculate log likelihood of the variables
 
+vector_of_points = np.zeros(num_of_variables)
+logLikelihood = 0
+logpdf = 0
 
+covariance = covarianceMat*np.identity(num_of_variables)
+vector_of_mean = [mu1, mu2, mu3, mu4]
+
+for i in range(len(cs_score_list)):
+    for j in range(df_list_len):
+        vector_of_points[j] = (df_list[j][i])
+    logpdf = multivariate_normal.logpdf(vector_of_points, vector_of_mean,covariance, allow_singular=True)
+    if not(math.isnan(logpdf)):
+        logLikelihood += logpdf
+    vector_of_points = np.zeros(num_of_variables)
+
+print('logLikelihood =', logLikelihood)
+
+# plot the
+# colors = np.random.rand(50)
+# f, axs = plt.subplots(3, 2,  figsize=(200, 100))
+# i = 0
+# j = 1
+# for row in axs:
+#     for col in row:
+#         col.scatter(df_list[i], df_list[j], c= colors)
+#         col.set_xlabel(df_list[i].name, fontsize=14)
+#         col.set_ylabel(df_list[j].name, fontsize=14)
+#         for k in range(50):
+#             col.annotate(dataframe["name"][k], xy=(df_list[i][k],df_list[j][k]+0.7))
+#         if j + 1 < 4:
+#             j = j + 1
+#         else:
+#             j = i + 1
+#     i = i + 1
+#
+# plt.show()
+
+abbreviate_name = list()
+short_name = ''
+for i in dataframe["name"]:
+    word_arr = i.split()
+    word_arr_len = len(word_arr)
+    for j in word_arr:
+        if word_arr_len > 1:
+            short_name += (j[0])
+        else:
+            short_name = j
+    abbreviate_name.append(short_name)
+    short_name = ""
+print(abbreviate_name)
