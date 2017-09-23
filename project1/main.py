@@ -24,6 +24,7 @@ file_path = os.path.abspath(os.path.join(current_dir, './DataSet/' + excel_filen
 dataframe = pd.DataFrame()
 dataset = pd.read_excel(file_path, excel_sheetname)
 dataframe = dataframe.append(dataset)
+dataframe = dataframe[dataframe["CS Score (USNews)"].notnull()]
 
 # get the list of variables from dataframe
 cs_score_list = dataframe.ix[:, 2]  # CS Score (USNews) column index in dataframe
@@ -33,22 +34,22 @@ tuition_list = dataframe.ix[:, 5]  # Tuition(out-state)$ column index
 
 
 # calculate mean for each variables
-mu1 = np.mean(cs_score_list)
-mu2 = np.mean(research_overhead_list)
-mu3 = np.mean(admn_base_pay_list)
-mu4 = np.mean(tuition_list);
+mu1 = round(np.mean(cs_score_list),3)
+mu2 = round(np.mean(research_overhead_list),3)
+mu3 = round(np.mean(admn_base_pay_list),3)
+mu4 = round(np.mean(tuition_list),3)
 
 # calculate variance for each variables
-var1 = np.var(cs_score_list)
-var2 = np.var(research_overhead_list)
-var3 = np.var(admn_base_pay_list)
-var4 = np.var(tuition_list)
+var1 = round(np.var(cs_score_list, ddof=1), 3)
+var2 = round(np.var(research_overhead_list, ddof=1), 3)
+var3 = round(np.var(admn_base_pay_list, ddof=1), 3)
+var4 = round(np.var(tuition_list, ddof=1), 3)
 
 # calculate standard deviation for each variables
-sigma1 = np.std(cs_score_list)
-sigma2 = np.std(research_overhead_list)
-sigma3 = np.std(admn_base_pay_list)
-sigma4 = np.std(tuition_list)
+sigma1 = round(np.std(cs_score_list, ddof=1), 3)
+sigma2 = round( np.std(research_overhead_list, ddof=1), 3)
+sigma3 = round(np.std(admn_base_pay_list, ddof=1), 3)
+sigma4 = round(np.std(tuition_list, ddof=1), 3)
 
 # print the mean, variance and standard deviation of each variables
 print('mu1 = ', mu1)
@@ -74,42 +75,55 @@ df_list.append(admn_base_pay_list)
 df_list.append(tuition_list)
 df_list_len = len(df_list)
 
+
+# could have initialized in the same line i.e  covarianceMat = correlationMat = np.zeros([df_list_len, df_list_len]).
+# but python lists and dictionaries are mutable objects
 covarianceMat = np.zeros([df_list_len, df_list_len])
-correlationMat = np.zeros([df_list_len, df_list_len])  # could have initialized in the same line i.e  covarianceMat = correlationMat = np.zeros([df_list_len, df_list_len]).
-                                                       # but python lists and dictionaries are mutable objects
-for i in range(df_list_len):
-    for j in range(i, df_list_len):
+correlationMat = np.zeros([df_list_len, df_list_len])
 
-        # calculate covariance
-        covarianceMat[i, j] = df_list[i].cov(df_list[j])
-        covarianceMat[j, i] = covarianceMat[i, j]
+covarianceMat = np.round(np.cov(df_list, ddof=1), 3)
+correlationMat = np.round(np.corrcoef(df_list), 3)
 
-        # calculate correlation
-        correlationMat[i, j] = df_list[i].corr(df_list[j])
-        correlationMat[j, i] = correlationMat[i, j]
+# incase you want to use pandas cov function to calculate covariance matrice
+# for i in range(df_list_len):
+#     for j in range(i, df_list_len):
+#
+#         # calculate covariance
+#         covarianceMat[i, j] = df_list[i].cov(df_list[j])
+#         covarianceMat[j, i] = covarianceMat[i, j]
+#
+#         # calculate correlation
+#         correlationMat[i, j] = df_list[i].corr(df_list[j])
+#         correlationMat[j, i] = correlationMat[i, j]
 
 print('covarianceMat = \n', covarianceMat)
 print('correlationMat = \n', correlationMat)
 
-
-# Calculate log likelihood of the variables
+# Calculate log likelihood of independent variables
 
 vector_of_points = np.zeros(num_of_variables)
 logLikelihood = 0
-logpdf = 0
+logLikelihood_depenedent_var = 0
+logpdf_independent_var = 0
+logpdf_dependent_var = 0
 
-covariance = covarianceMat*np.identity(num_of_variables)
+covar_independent_var = covarianceMat * np.identity(num_of_variables)
 vector_of_mean = [mu1, mu2, mu3, mu4]
 
 for i in range(len(cs_score_list)):
     for j in range(df_list_len):
         vector_of_points[j] = (df_list[j][i])
-    logpdf = multivariate_normal.logpdf(vector_of_points, vector_of_mean,covariance, allow_singular=True)
-    if not(math.isnan(logpdf)):
-        logLikelihood += logpdf
+    logpdf_independent_var = multivariate_normal.logpdf(vector_of_points, vector_of_mean,
+                                                        covar_independent_var, allow_singular=True)
+    logpdf_dependent_var = multivariate_normal.logpdf(vector_of_points, vector_of_mean,
+                                                      covarianceMat, allow_singular=True)
+    # if not(math.isnan(logpdf_independent_var)):
+    logLikelihood += logpdf_independent_var
+    logLikelihood_depenedent_var += logpdf_dependent_var
     vector_of_points = np.zeros(num_of_variables)
 
 print('logLikelihood =', logLikelihood)
+print('logLikelihood (Dependent variables) =', logLikelihood_depenedent_var)
 
 # plot the
 # colors = np.random.rand(50)
@@ -130,17 +144,3 @@ print('logLikelihood =', logLikelihood)
 #     i = i + 1
 #
 # plt.show()
-
-abbreviate_name = list()
-short_name = ''
-for i in dataframe["name"]:
-    word_arr = i.split()
-    word_arr_len = len(word_arr)
-    for j in word_arr:
-        if word_arr_len > 1:
-            short_name += (j[0])
-        else:
-            short_name = j
-    abbreviate_name.append(short_name)
-    short_name = ""
-print(abbreviate_name)
