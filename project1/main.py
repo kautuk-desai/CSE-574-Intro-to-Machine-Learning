@@ -1,11 +1,12 @@
 import os
-import math
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal
 
 # print the name and person number
+print('UBitName = ', 'satyasiv')
+print('personNumber = ', 50248987)
 print('UBitName = ', 'kautukra')
 print('personNumber = ', 50247648)
 print('\n')  # print section break
@@ -99,8 +100,7 @@ correlationMat = np.round(np.corrcoef(df_list), 3)
 print('covarianceMat = \n', covarianceMat)
 print('correlationMat = \n', correlationMat)
 
-# Calculate log likelihood of independent variables
-
+# Calculate log likelihood of the given dataset
 vector_of_points = np.zeros(num_of_variables)
 logLikelihood = 0
 logLikelihood_depenedent_var = 0
@@ -126,13 +126,14 @@ print('logLikelihood =', logLikelihood)
 print('logLikelihood (Dependent variables) =', logLikelihood_depenedent_var)
 
 # plot the
-# colors = np.random.rand(50)
-# f, axs = plt.subplots(3, 2,  figsize=(200, 100))
+# colors = np.random.rand(49)
+# f, axs = plt.subplots(3, 2,  figsize=(100, 100))
 # i = 0
 # j = 1
 # for row in axs:
 #     for col in row:
-#         col.scatter(df_list[i], df_list[j], c= colors)
+#
+#         col.scatter(df_list[i], df_list[j], c=colors)
 #         col.set_xlabel(df_list[i].name, fontsize=14)
 #         col.set_ylabel(df_list[j].name, fontsize=14)
 #         for k in range(50):
@@ -144,3 +145,15 @@ print('logLikelihood (Dependent variables) =', logLikelihood_depenedent_var)
 #     i = i + 1
 #
 # plt.show()
+
+colors = np.random.rand(49)
+subplot_index = 1
+for i in range(4):
+    for j in range(i + 1,4):
+        f,axs = plt.subplots(1,1, figsize=(15,15))
+        plt.scatter(df_list[i],df_list[j], c=colors)
+        plt.xlabel(df_list[i].name, fontsize=14)
+        plt.ylabel(df_list[j].name, fontsize=14)
+        subplot_index+=1
+
+plt.show()
