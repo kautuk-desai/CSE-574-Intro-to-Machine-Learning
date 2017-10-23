@@ -5,6 +5,8 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.cluster.vq import kmeans2
+from sklearn import svm
+from sklearn.model_selection import GridSearchCV
 
 # print the UBIT name and person number
 print('UBitName = ', 'satyasiv')
@@ -79,24 +81,39 @@ def main():
     # So we choose 0.1 as the spread for each of the basis functions.
     " Choose spread section End "
 
+    # parameters = {'kernel': ['rbf'], 'gamma': [1, 20, 30, 40, 50, 100]}
+    # svc = svm.SVC()
+    # clf = GridSearchCV(svc, parameters)
+    # clf.fit(training_input, training_target)
+    # print(clf.best_score_)
+
     k_clusters = 30
     centroids, label = kmeans2(training_input, k_clusters, minit='points')
+    regularizer_lambda = 1
 
     inverse_covariance_matrix = get_inverse_covariance_matrix(training_input, k_clusters, label)
 
     design_matrix = compute_design_matrix(training_input, centroids.T, inverse_covariance_matrix)
     # print(design_matrix.shape)
 
-    weights = closed_form_solution(1, design_matrix, training_target)
-    # print('Closed form solution: ', weights)
+    closed_form_weights = closed_form_solution(1, design_matrix, training_target)
+    # print('Closed form solution: ', closed_form_weights)
 
     validation_design_matrix = compute_design_matrix(validation_input, centroids.T, inverse_covariance_matrix)
 
     """ Gradient Descent Section """
-    weights = SGD_sol(1, weights, 500, 0.1, design_matrix, training_target, validation_design_matrix, validation_target)
-    # print('Gradient descent weights: \n', weights)
+    weights = np.zeros(closed_form_weights.shape)
+    learning_rate = 1
+    sgd_weights = compute_SGD(learning_rate, weights, 500, regularizer_lambda, design_matrix, training_target, validation_design_matrix,
+                          validation_target)
+    # print('Gradient descent weights: \n', sgd_weights)
 
     """ Gradient Descent Section  """
+
+    compute_test_result(test_input, test_target, regularizer_lambda, centroids, inverse_covariance_matrix,
+                        closed_form_weights, sgd_weights)
+
+
 
 """
 :description: the function generates the variance of the clustered data
@@ -139,7 +156,6 @@ def closed_form_solution(regularizer_lambda, design_matrix, target_data):
     third_term = np.matmul(design_matrix.T, target_data)
 
     weights = np.linalg.solve(first_term + second_term, third_term).flatten()
-
     e_rms = compute_sum_of_squared_error(design_matrix, target_data, regularizer_lambda, weights)
     print('Closed form Erms: ', e_rms)
     return weights
@@ -150,7 +166,6 @@ def compute_sum_of_squared_error(design_matrix, target_data, regularizer_lambda,
     regularizer_term = (np.matmul(weights.T, weights) * regularizer_lambda) / 2
 
     sum_of_squares_error = error_term + regularizer_term
-
     e_rms = np.sqrt(2 * sum_of_squares_error / len(design_matrix))
     return e_rms
 
@@ -168,33 +183,35 @@ def compute_gradient_error(design_matrix, target_data, weights, L2_lambda, size)
     return differentiation_error
 
 
-def SGD_sol(learning_rate, weights, minibatch_size, L2_lambda, design_matrix, target_data, validation_design_matrix, validation_target):
+def compute_SGD(learning_rate, weights, minibatch_size, L2_lambda, design_matrix, target_data, validation_design_matrix, validation_target):
     N, _ = design_matrix.shape
     patience = 50
     improvement_threshold = 0.0001
     min_validation_error = np.inf
     optimal_weights = weights.shape
     j = 0
+    steps = int(N / minibatch_size)
 
     while j < patience:
-        for i in range(minibatch_size):
+        for i in range(steps):
             lower_bound = i * minibatch_size
             upper_bound = min((i + 1) * minibatch_size, N)
             phi = design_matrix[lower_bound:upper_bound, :]
             t = target_data[lower_bound: upper_bound]
+
             differentiation_error = compute_gradient_error(phi, t, weights, L2_lambda, minibatch_size)
             weights = weights - learning_rate * differentiation_error
 
-        validation_error = compute_gradient_error(validation_design_matrix, validation_target, weights, L2_lambda, len(validation_target))
-        validation_error = np.linalg.norm(validation_error)
-        if np.absolute(validation_error - min_validation_error) < improvement_threshold:
-            min_validation_error = validation_error
+        validation_error_rms = compute_sum_of_squared_error(validation_design_matrix, validation_target, L2_lambda, weights)
+
+        if np.absolute(validation_error_rms - min_validation_error) < improvement_threshold:
+            min_validation_error = validation_error_rms
             optimal_weights = weights
             break
 
-        if validation_error < min_validation_error:
+        if validation_error_rms < min_validation_error:
             j = 0
-            min_validation_error = validation_error
+            min_validation_error = validation_error_rms
             optimal_weights = weights
         else:
             j = j + 1
@@ -203,6 +220,17 @@ def SGD_sol(learning_rate, weights, minibatch_size, L2_lambda, design_matrix, ta
     print('SGD Erms: ', erms)
 
     return optimal_weights
+
+
+def compute_test_result(test_input, test_target, regularizer_lambda, centroids, inverse_covariance_matrix,
+                        closed_form_weights, sgd_weights):
+    test_design_matrix = compute_design_matrix(test_input, centroids.T, inverse_covariance_matrix)
+    test_error_rms_cf = compute_sum_of_squared_error(test_design_matrix, test_target, regularizer_lambda, closed_form_weights)
+    print('Test Error rms (closed form weights): ', test_error_rms_cf)
+
+    test_error_rms_sgd = compute_sum_of_squared_error(test_design_matrix, test_target, regularizer_lambda,
+                                                      sgd_weights)
+    print('Test Error rms (closed form weights): ', test_error_rms_sgd)
 
 if __name__ == '__main__':
     main()
