@@ -11,7 +11,7 @@ print('UBitName = ', 'satyasiv')
 print('personNumber = ', 50248987)
 print('UBitName = ', 'kautukra')
 print('personNumber = ', 50247648)
-print('\n')  # print section break
+print('\n')  # print section break)
 
 """
 This code was written to clean the data in Querylevelnorm.txt. Now since we have the input data variables X and
@@ -77,41 +77,129 @@ def main():
     # To choose the spread for each of the basis functions the histogram of few features was taken.
     # We see that most of the points have frequency peaks between 0 and 0.2.
     # So we choose 0.1 as the spread for each of the basis functions.
-
     " Choose spread section End "
 
     k_clusters = 30
     centroids, label = kmeans2(training_input, k_clusters, minit='points')
 
-    # genearate spread of each data point
-    covariance_matrix = np.cov(training_input, rowvar=False)
-    identity_matrix = np.identity(46)
+    inverse_covariance_matrix = get_inverse_covariance_matrix(training_input, k_clusters, label)
 
-    covariance_matrix_diag = covariance_matrix * identity_matrix
+    design_matrix = compute_design_matrix(training_input, centroids.T, inverse_covariance_matrix)
+    # print(design_matrix.shape)
 
-    basis_funct = compute_design_matrix(training_input, centroids.T, covariance_matrix_diag)
-    print(covariance_matrix_diag)
+    weights = closed_form_solution(1, design_matrix, training_target)
+    # print('Closed form solution: ', weights)
+
+    validation_design_matrix = compute_design_matrix(validation_input, centroids.T, inverse_covariance_matrix)
+
+    """ Gradient Descent Section """
+    weights = SGD_sol(1, weights, len(training_input), 10000, 0.1, design_matrix, training_target, validation_design_matrix,
+                      validation_target)
+    print('Gradient descent: ', weights)
+    """ Gradient Descent Section  """
+
+"""
+:description: the function generates the variance of the clustered data
+:returns variance matrix
+"""
+def get_inverse_covariance_matrix(training_input,k_clusters, label):
+    cluster_points = [[]] * k_clusters
+    cluster_variance = [[]] * k_clusters
+    for i in range(0, k_clusters):
+        cluster_points[i] = (training_input[np.where(label == i)])
+        cluster_variance[i] = np.linalg.pinv(np.identity(46) * np.var(cluster_points[i], axis=0, ddof=1))
+
+    return np.array(cluster_variance)
 
 
 def compute_design_matrix(input_data, cluster_centers, spread):
+    cluster_centers = np.array([cluster_centers]).T
+    broadcast = np.broadcast(input_data.T, cluster_centers)
+    yj = np.empty(broadcast.shape)
+    yj.flat = [x - u for (x, u) in broadcast]
 
-    input_data = np.reshape(input_data, [len(input_data), len(input_data[0])])
-    cluster_centers = np.reshape(cluster_centers, [len(cluster_centers), len(cluster_centers[0])])
-    print(cluster_centers[0])
-    print(cluster_centers[1])
-    broadcast = np.broadcast(np.array(input_data), np.array(cluster_centers))
-
-    out = np.empty(broadcast.shape)
-    out.flat = [x-u for (x,u) in broadcast]
-
-    basis_func = np.exp(
+    design_matrix = np.exp(
         np.sum(
-            np.matmul(input_data - cluster_centers, spread) * (input_data - cluster_centers), axis=2
-        ) / (-2)
-    ).T
+            (np.einsum('ndm,mdd->ndm', yj.T, spread) * yj.T), axis=1)
+        / (-2)
+    )
 
-    return np.insert(basis_func, 0, 1, axis=1)
+    design_matrix = np.insert(design_matrix, 0, 1, axis=1)
+    return design_matrix
 
+"""
+:description the function calculates the weights using the closed form solution.
+             the regularizer term is used to minimize the overfitting issue 
+:parameter regularizer lambda, design matrix, target data
+:returns the weights calculated
+"""
+def closed_form_solution(regularizer_lambda, design_matrix, target_data):
+    first_term = np.dot(regularizer_lambda, np.identity(len(design_matrix[0])))
+    second_term = np.matmul(design_matrix.T, design_matrix)
+    third_term = np.matmul(design_matrix.T, target_data)
+
+    weights = np.linalg.solve(first_term + second_term, third_term).flatten()
+
+    e_rms = compute_sum_of_squared_error(design_matrix, target_data, regularizer_lambda, weights)
+    print(e_rms)
+    return weights
+
+
+def compute_sum_of_squared_error(design_matrix, target_data, regularizer_lambda, weights):
+    error_term = np.sum(np.square(target_data - np.matmul(design_matrix, weights))) / 2
+    regularizer_term = (np.matmul(weights.T, weights) * regularizer_lambda) / 2
+
+    sum_of_squares_error = error_term + regularizer_term
+
+    e_rms = np.sqrt(2 * sum_of_squares_error / len(design_matrix))
+    return e_rms
+
+
+def compute_expected_output(weights, design_matrix):
+    expected_output = np.matmul(weights, design_matrix)
+    return expected_output
+
+
+def compute_gradient_error(design_matrix, target_data, weights, L2_lambda, size):
+    yj = np.matmul(design_matrix, weights.T)
+    difference = (yj - target_data).T
+    e_d = np.matmul(difference, design_matrix)
+    differentiation_error = (e_d + L2_lambda * weights) / size
+    return differentiation_error
+
+
+def SGD_sol(learning_rate, weights, minibatch_size, L2_lambda, design_matrix, target_data, validation_design_matrix, validation_target):
+    N, _ = design_matrix.shape
+    patience = 50
+    improvement_threshold = 0.0001
+    minibatch_size = 500
+    min_validation_error = np.inf
+    optimal_weights = weights.shape
+    j = 0
+
+    while j < patience:
+        for i in range(minibatch_size):
+            lower_bound = i * minibatch_size
+            upper_bound = min((i + 1) * minibatch_size, N)
+            phi = design_matrix[lower_bound:upper_bound, :]
+            t = target_data[lower_bound: upper_bound]
+            differentiation_error = compute_gradient_error(phi, t, weights, L2_lambda, minibatch_size)
+            weights = weights - learning_rate * differentiation_error
+
+        validation_error = compute_gradient_error(validation_design_matrix, validation_target, L2_lambda, len(validation_target))
+        if np.absolute(validation_error - min_validation_error) < improvement_threshold:
+            min_validation_error = validation_error
+            optimal_weights = weights
+            break
+
+        if validation_error < min_validation_error:
+            j = 0
+            min_validation_error = validation_error
+            optimal_weights = weights
+        else:
+            j = j + 1
+
+    return optimal_weights
 
 if __name__ == '__main__':
     main()
