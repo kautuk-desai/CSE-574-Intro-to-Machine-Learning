@@ -93,9 +93,9 @@ def main():
     validation_design_matrix = compute_design_matrix(validation_input, centroids.T, inverse_covariance_matrix)
 
     """ Gradient Descent Section """
-    weights = SGD_sol(1, weights, len(training_input), 10000, 0.1, design_matrix, training_target, validation_design_matrix,
-                      validation_target)
-    print('Gradient descent: ', weights)
+    weights = SGD_sol(1, weights, 500, 0.1, design_matrix, training_target, validation_design_matrix, validation_target)
+    # print('Gradient descent weights: \n', weights)
+
     """ Gradient Descent Section  """
 
 """
@@ -141,7 +141,7 @@ def closed_form_solution(regularizer_lambda, design_matrix, target_data):
     weights = np.linalg.solve(first_term + second_term, third_term).flatten()
 
     e_rms = compute_sum_of_squared_error(design_matrix, target_data, regularizer_lambda, weights)
-    print(e_rms)
+    print('Closed form Erms: ', e_rms)
     return weights
 
 
@@ -172,7 +172,6 @@ def SGD_sol(learning_rate, weights, minibatch_size, L2_lambda, design_matrix, ta
     N, _ = design_matrix.shape
     patience = 50
     improvement_threshold = 0.0001
-    minibatch_size = 500
     min_validation_error = np.inf
     optimal_weights = weights.shape
     j = 0
@@ -186,7 +185,8 @@ def SGD_sol(learning_rate, weights, minibatch_size, L2_lambda, design_matrix, ta
             differentiation_error = compute_gradient_error(phi, t, weights, L2_lambda, minibatch_size)
             weights = weights - learning_rate * differentiation_error
 
-        validation_error = compute_gradient_error(validation_design_matrix, validation_target, L2_lambda, len(validation_target))
+        validation_error = compute_gradient_error(validation_design_matrix, validation_target, weights, L2_lambda, len(validation_target))
+        validation_error = np.linalg.norm(validation_error)
         if np.absolute(validation_error - min_validation_error) < improvement_threshold:
             min_validation_error = validation_error
             optimal_weights = weights
@@ -198,6 +198,9 @@ def SGD_sol(learning_rate, weights, minibatch_size, L2_lambda, design_matrix, ta
             optimal_weights = weights
         else:
             j = j + 1
+
+    erms = compute_sum_of_squared_error(design_matrix, target_data, L2_lambda, optimal_weights)
+    print('SGD Erms: ', erms)
 
     return optimal_weights
 
