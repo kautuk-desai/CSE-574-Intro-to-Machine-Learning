@@ -5,70 +5,25 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.cluster.vq import kmeans2
-from sklearn import svm
-from sklearn.model_selection import GridSearchCV
-
-# print the UBIT name and person number
-print('UBitName = ', 'satyasiv')
-print('personNumber = ', 50248987)
-print('UBitName = ', 'kautukra')
-print('personNumber = ', 50247648)
-print('\n')  # print section break)
-
-"""
-This code was written to clean the data in Querylevelnorm.txt. Now since we have the input data variables X and
-target variable T in the file Querylevelnorm_X and Querylevelnorm_t respectively. We do not use the below code.
- 
-# variables realted to file
-dataset_filename = 'Querylevelnorm.txt'
-
-# get the relative file path as the file is in data set folder
-current_dir = os.path.dirname(__file__)
-file_path = os.path.abspath(os.path.join(current_dir, './MQ2007/' + dataset_filename))
-
-# since each row in text file contains feature number and :
-# the file is opened and unwated characters are removed from the file text
-with open(file_path, 'r') as dataset_file:
-    text = dataset_file.read()
-    text = re.sub(r"\d+:", "", text)
-dataset_file.close()
-
-# the cleaned file text is then saved to a new file
-with open('cleaned_dataset.txt', 'w') as file:
-    file.write(text)
-file.close()
-
-letor_dataset = np.genfromtxt('cleaned_dataset.txt', dtype=None, delimiter=" ")
-
-End """
 
 
 def main():
+    # compute_linear_reg_letor()
 
+    compute_linear_reg_synthetic_data()
+
+
+def compute_linear_reg_letor():
     # input data file does not contain the reference label which is our target. also it does not have the qid (column 2)
     # basically the file contains the cleaned data. It contains the feature values
     letor_input = np.genfromtxt('Querylevelnorm_X.csv', delimiter=',')
-
+    global num_of_observations, num_of_features
+    num_of_observations, num_of_features = letor_input.shape
     # target datafile contains the reference label which is our target value and which determines the relationship
     # between query and document. Higher the value better the relation.
     letor_target = np.genfromtxt('Querylevelnorm_t.csv', delimiter=',')
 
-    # print(letor_input[:, 0])  # first column
-
-    "Partition Data Section"
-    data_count = len(letor_input)
-    training_data_row_limit = math.floor(0.8 * data_count)
-    validation_data_row_limit = training_data_row_limit + math.floor(0.1 * data_count)
-
-    training_input = letor_input[:training_data_row_limit]
-    training_target = letor_target[:training_data_row_limit]
-
-    validation_input = letor_input[training_data_row_limit: validation_data_row_limit]
-    validation_target = letor_target[training_data_row_limit: validation_data_row_limit]
-
-    test_input = letor_input[validation_data_row_limit: data_count]
-    test_target = letor_target[validation_data_row_limit: data_count]
-    "Partition Data Section End"
+    partition_data(letor_input, letor_target)
 
     " Choose spread section "
     # plt.hist(training_input[:, 1])
@@ -81,37 +36,103 @@ def main():
     # So we choose 0.1 as the spread for each of the basis functions.
     " Choose spread section End "
 
-    # parameters = {'kernel': ['rbf'], 'gamma': [1, 20, 30, 40, 50, 100]}
-    # svc = svm.SVC()
-    # clf = GridSearchCV(svc, parameters)
-    # clf.fit(training_input, training_target)
-    # print(clf.best_score_)
+    # compute_optimal_hyperparameters()
 
-    k_clusters = 30
-    centroids, label = kmeans2(training_input, k_clusters, minit='points')
-    regularizer_lambda = 1
+    # the hyperparameters are obtained after computing the search on range of M (1 to 100) and lambda (0 to 1, 0.1)
+    model_complexity = 56
+    regularizer_lambda = 0
 
-    inverse_covariance_matrix = get_inverse_covariance_matrix(training_input, k_clusters, label)
+    centroids, label = kmeans2(training_input, model_complexity, minit='points')
+    inv_covariance_matrix = get_inverse_covariance_matrix(model_complexity, label)
+    design_matrix = compute_design_matrix(training_input, centroids.T, inv_covariance_matrix)
+    closed_form_weights = closed_form_solution(design_matrix, training_target, regularizer_lambda)
 
-    design_matrix = compute_design_matrix(training_input, centroids.T, inverse_covariance_matrix)
-    # print(design_matrix.shape)
+    # Gradient Descent Section
+    validation_design_matrix = compute_design_matrix(validation_input, centroids.T, inv_covariance_matrix)
+    sgd_weights = compute_SGD(design_matrix, training_target, validation_design_matrix, validation_target, regularizer_lambda)
+    # Gradient Descent Section
 
-    closed_form_weights = closed_form_solution(1, design_matrix, training_target)
-    # print('Closed form solution: ', closed_form_weights)
+    compute_test_result(centroids, inv_covariance_matrix, closed_form_weights, sgd_weights, regularizer_lambda)
 
-    validation_design_matrix = compute_design_matrix(validation_input, centroids.T, inverse_covariance_matrix)
 
-    """ Gradient Descent Section """
-    weights = np.zeros(closed_form_weights.shape)
-    learning_rate = 1
-    sgd_weights = compute_SGD(learning_rate, weights, 500, regularizer_lambda, design_matrix, training_target, validation_design_matrix,
-                          validation_target)
-    # print('Gradient descent weights: \n', sgd_weights)
+def compute_linear_reg_synthetic_data():
+    synthetic_input = np.genfromtxt('input.csv', delimiter=',')
+    global num_of_observations, num_of_features
+    num_of_observations, num_of_features = synthetic_input.shape
 
-    """ Gradient Descent Section  """
+    synthetic_target = np.genfromtxt('output.csv', delimiter=',')
 
-    compute_test_result(test_input, test_target, regularizer_lambda, centroids, inverse_covariance_matrix,
-                        closed_form_weights, sgd_weights)
+    partition_data(synthetic_input, synthetic_target)
+
+    compute_optimal_hyperparameters()
+
+    model_complexity = 30
+    regularizer_lambda = 0
+
+    centroids, label = kmeans2(training_input, model_complexity, minit='points')
+    inv_covariance_matrix = get_inverse_covariance_matrix(model_complexity, label)
+    design_matrix = compute_design_matrix(training_input, centroids.T, inv_covariance_matrix)
+    closed_form_weights = closed_form_solution(design_matrix, training_target, regularizer_lambda)
+
+    # Gradient Descent Section
+    validation_design_matrix = compute_design_matrix(validation_input, centroids.T, inv_covariance_matrix)
+    sgd_weights = compute_SGD(design_matrix, training_target, validation_design_matrix, validation_target,
+                              regularizer_lambda)
+    # Gradient Descent Section
+
+
+    compute_test_result(centroids, inv_covariance_matrix, closed_form_weights, sgd_weights, regularizer_lambda)
+
+
+
+def partition_data(input_data, target_data):
+    training_data_row_limit = math.floor(0.8 * num_of_observations)
+    validation_data_row_limit = training_data_row_limit + math.floor(0.1 * num_of_observations)
+
+    global training_input, training_target, validation_input, validation_target, test_input, test_target
+    training_input = input_data[:training_data_row_limit]
+    training_target = target_data[:training_data_row_limit]
+
+    validation_input = input_data[training_data_row_limit: validation_data_row_limit]
+    validation_target = target_data[training_data_row_limit: validation_data_row_limit]
+
+    test_input = input_data[validation_data_row_limit: num_of_observations]
+    test_target = target_data[validation_data_row_limit: num_of_observations]
+
+"""
+:returns the optimal model complexity (M) for Gaussian RBF
+"""
+def compute_optimal_hyperparameters():
+    k_clusters = 10
+    min_lambda = 0
+    max_lambda = 1
+    lambda_step_size = 0.1
+    optimal_M = np.inf
+    optimal_lambda = np.inf
+    optimal_centroids = None
+    optimal_error_rms = np.inf
+    optimal_weights = None
+    error_rms_grid = np.zeros([k_clusters, int(max_lambda / lambda_step_size)])
+    test_lambda = np.arange(min_lambda, max_lambda, lambda_step_size)
+
+    for k_cluster in range(1, k_clusters):
+        centroids, label = kmeans2(training_input, k_cluster, minit='points')
+        inv_covariance_matrix = get_inverse_covariance_matrix(k_cluster, label)
+        design_matrix = compute_design_matrix(training_input, centroids.T, inv_covariance_matrix)
+        validation_design_matrix = compute_design_matrix(validation_input, centroids.T, inv_covariance_matrix)
+
+        for index, _lambda in enumerate(test_lambda):
+            closed_form_weights = closed_form_solution(design_matrix, training_target, _lambda)
+            error_rms = compute_sum_of_squared_error(validation_design_matrix, validation_target, closed_form_weights, _lambda)
+            error_rms_grid[k_cluster, index] = error_rms
+            print('Error for M = {0} and lambda = {1} is {2}'.format(k_cluster, _lambda, error_rms))
+            if error_rms < optimal_error_rms:
+                optimal_error_rms = error_rms
+                optimal_M = k_cluster
+                optimal_lambda = _lambda
+
+    print('Optimal model complexity (M) for M in 1 to {} is: {}'.format(k_clusters, optimal_M))
+    print('optimal regularizer constant lambda in {} to {} is: {}'.format(min_lambda, max_lambda, optimal_lambda))
 
 
 
@@ -119,12 +140,12 @@ def main():
 :description: the function generates the variance of the clustered data
 :returns variance matrix
 """
-def get_inverse_covariance_matrix(training_input,k_clusters, label):
+def get_inverse_covariance_matrix(k_clusters, label):
     cluster_points = [[]] * k_clusters
     cluster_variance = [[]] * k_clusters
     for i in range(0, k_clusters):
         cluster_points[i] = (training_input[np.where(label == i)])
-        cluster_variance[i] = np.linalg.pinv(np.identity(46) * np.var(cluster_points[i], axis=0, ddof=1))
+        cluster_variance[i] = np.linalg.pinv(np.identity(num_of_features) * np.var(cluster_points[i], axis=0, ddof=1))
 
     return np.array(cluster_variance)
 
@@ -150,22 +171,18 @@ def compute_design_matrix(input_data, cluster_centers, spread):
 :parameter regularizer lambda, design matrix, target data
 :returns the weights calculated
 """
-def closed_form_solution(regularizer_lambda, design_matrix, target_data):
+def closed_form_solution(design_matrix, target_data, regularizer_lambda):
     first_term = np.dot(regularizer_lambda, np.identity(len(design_matrix[0])))
     second_term = np.matmul(design_matrix.T, design_matrix)
     third_term = np.matmul(design_matrix.T, target_data)
-
     weights = np.linalg.solve(first_term + second_term, third_term).flatten()
-    e_rms = compute_sum_of_squared_error(design_matrix, target_data, regularizer_lambda, weights)
-    print('Closed form Erms: ', e_rms)
     return weights
 
 
-def compute_sum_of_squared_error(design_matrix, target_data, regularizer_lambda, weights):
+def compute_sum_of_squared_error(design_matrix, target_data, weights, regularizer_lambda):
     error_term = np.sum(np.square(target_data - np.matmul(design_matrix, weights))) / 2
-    regularizer_term = (np.matmul(weights.T, weights) * regularizer_lambda) / 2
-
-    sum_of_squares_error = error_term + regularizer_term
+    regularized_term = (np.matmul(weights.T, weights) * regularizer_lambda) / 2
+    sum_of_squares_error = error_term + regularized_term
     e_rms = np.sqrt(2 * sum_of_squares_error / len(design_matrix))
     return e_rms
 
@@ -175,62 +192,74 @@ def compute_expected_output(weights, design_matrix):
     return expected_output
 
 
-def compute_gradient_error(design_matrix, target_data, weights, L2_lambda, size):
+def compute_gradient_error(design_matrix, target_data, weights, regularizer_lambda):
     yj = np.matmul(design_matrix, weights.T)
     difference = (yj - target_data).T
     e_d = np.matmul(difference, design_matrix)
-    differentiation_error = (e_d + L2_lambda * weights) / size
+    differentiation_error = (e_d + regularizer_lambda * weights) / mini_batch_size
     return differentiation_error
 
 
-def compute_SGD(learning_rate, weights, minibatch_size, L2_lambda, design_matrix, target_data, validation_design_matrix, validation_target):
+def compute_SGD(design_matrix, target_data, validation_design_matrix, validation_target, regularizer_lambda):
     N, _ = design_matrix.shape
-    patience = 50
-    improvement_threshold = 0.0001
+    patience = 50  # this is our patience level!
     min_validation_error = np.inf
-    optimal_weights = weights.shape
+    weights = np.zeros(design_matrix.shape[1])
+    optimal_weights = np.zeros(design_matrix.shape[1])
     j = 0
-    steps = int(N / minibatch_size)
+    steps = int(N / mini_batch_size)
 
-    while j < patience:
-        for i in range(steps):
-            lower_bound = i * minibatch_size
-            upper_bound = min((i + 1) * minibatch_size, N)
-            phi = design_matrix[lower_bound:upper_bound, :]
-            t = target_data[lower_bound: upper_bound]
+    for epoch in range(num_epochs):
+        while j < patience:
+            for i in range(steps):
+                lower_bound = i * mini_batch_size
+                upper_bound = min((i + 1) * mini_batch_size, N)
+                phi = design_matrix[lower_bound:upper_bound, :]
+                t = target_data[lower_bound: upper_bound]
 
-            differentiation_error = compute_gradient_error(phi, t, weights, L2_lambda, minibatch_size)
-            weights = weights - learning_rate * differentiation_error
+                differentiation_error = compute_gradient_error(phi, t, weights, regularizer_lambda)
+                weights = weights - learning_rate * differentiation_error
 
-        validation_error_rms = compute_sum_of_squared_error(validation_design_matrix, validation_target, L2_lambda, weights)
+            validation_error_rms = compute_sum_of_squared_error(validation_design_matrix, validation_target, weights,
+                                                                regularizer_lambda)
 
-        if np.absolute(validation_error_rms - min_validation_error) < improvement_threshold:
-            min_validation_error = validation_error_rms
-            optimal_weights = weights
-            break
-
-        if validation_error_rms < min_validation_error:
-            j = 0
-            min_validation_error = validation_error_rms
-            optimal_weights = weights
-        else:
-            j = j + 1
-
-    erms = compute_sum_of_squared_error(design_matrix, target_data, L2_lambda, optimal_weights)
-    print('SGD Erms: ', erms)
+            if validation_error_rms < min_validation_error:
+                j = 0
+                min_validation_error = validation_error_rms
+                optimal_weights = weights
+            else:
+                j = j + 1
 
     return optimal_weights
 
 
-def compute_test_result(test_input, test_target, regularizer_lambda, centroids, inverse_covariance_matrix,
-                        closed_form_weights, sgd_weights):
+def compute_test_result(centroids, inverse_covariance_matrix, closed_form_weights, sgd_weights, regularizer_lambda):
+
     test_design_matrix = compute_design_matrix(test_input, centroids.T, inverse_covariance_matrix)
-    test_error_rms_cf = compute_sum_of_squared_error(test_design_matrix, test_target, regularizer_lambda, closed_form_weights)
+    test_error_rms_cf = compute_sum_of_squared_error(test_design_matrix, test_target, closed_form_weights,
+                                                     regularizer_lambda)
     print('Test Error rms (closed form weights): ', test_error_rms_cf)
 
-    test_error_rms_sgd = compute_sum_of_squared_error(test_design_matrix, test_target, regularizer_lambda,
-                                                      sgd_weights)
-    print('Test Error rms (closed form weights): ', test_error_rms_sgd)
+    test_error_rms_sgd = compute_sum_of_squared_error(test_design_matrix, test_target, sgd_weights, regularizer_lambda)
+    print('Test Error rms (stochastic gradient decent): ', test_error_rms_sgd)
+
+    y_closed_form = np.matmul(test_design_matrix, closed_form_weights)
+    y_sgd = np.matmul(test_design_matrix, sgd_weights)
+    # print(y_closed_form)
+
+def compute_validation_result():
+    print('test')
 
 if __name__ == '__main__':
+    # initialize common variables that are going to be used through-out
+    learning_rate = 1
+    num_epochs = 100
+    mini_batch_size = 500
+    num_of_observations, num_of_features = 0, 0
+    training_input = 0
+    training_target = 0
+    validation_input = None
+    validation_target = None
+    test_input = None
+    test_target = None
     main()
