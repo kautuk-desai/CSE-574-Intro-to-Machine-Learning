@@ -35,15 +35,41 @@ def main():
 	accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 	# USPS data
-	img = mpimg.imread('./proj3_images/Test/test_0003.png')
+	usps_data_count = 1500
+	usps_per_digit_data = 150
+	per_digit_label_counter = 0
+	usps_test_images = np.ndarray([usps_data_count, 784])
+	image_label = 0
+	usps_test_labels = np.ndarray([usps_data_count, 10])
 
-	image = np.resize(img, (28,28))
-	image = image.flatten()
+	for i in range(usps_data_count, 1):
+		file_path = './proj3_images/Test/test_' + "{0:0=4d}".format(i) + '.png'
+		img = mpimg.imread(file_path)
+		image = np.resize(img, (28,28))
+		usps_test_images[i] = image.flatten()
 
-	label = np.zeros(10)
-	label[9] = 1;
+		if (per_digit_label_counter == usps_per_digit_data):
+			image_label += 1
+			per_digit_label_counter = 0
 
-	print('Classification error rate: ', sess.run(accuracy, feed_dict = {x: [image], y_: [label]}))
+		per_digit_label_counter += 1
+		label = np.zeros(10)
+		label[image_label] = 1
+		usps_test_labels[i] = label
+		
+
+
+	print(len(usps_test_images))
+	print(len(usps_test_images[0]))
+	print(len(usps_test_labels))
+	print(len(usps_test_labels[0]))
+
+	ip = usps_test_images[0]
+	op = usps_test_labels[0]
+
+	print('predicted_output: ', sess.run(predicted_output, feed_dict = {x: [ip], y_: [op]}))
+	print('expected_output: ', sess.run(expected_output, feed_dict = {x: [ip], y_: [op]}))
+	print('Classification accuracy: ', sess.run(accuracy, feed_dict = {x: [ip], y_: [op]}))
 
 
 
