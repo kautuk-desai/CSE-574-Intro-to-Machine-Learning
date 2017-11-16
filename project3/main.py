@@ -4,6 +4,9 @@ from tensorflow.examples.tutorials.mnist import input_data
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
+import PIL.ImageOps as ImageOps
+
 
 def main():
 	mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
@@ -34,6 +37,7 @@ def main():
 	# correct_prediction = tf.Print(correct_prediction, [correct_prediction])
 
 	accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+	accuracy = tf.multiply(accuracy, 100)
 
 	# USPS data
 	usps_data_count = 1500
@@ -42,12 +46,21 @@ def main():
 	usps_test_images = np.ndarray([usps_data_count + 1, 784])
 	image_label = 0
 	usps_test_labels = np.ndarray([usps_data_count + 1, 10])
+	size = (28, 28)
 
 	for i in range(usps_data_count, 0, -1):
 		file_path = './proj3_images/Test/test_' + "{0:0=4d}".format(i) + '.png'
-		img = mpimg.imread(file_path)
-		image = np.resize(img, (28,28))
-		flattened_vector = image.flatten()
+		img = Image.open(file_path)
+		img = img.resize((28,28))
+
+		# if img.mode != 'RGB':
+		# 	img = img.convert('RGB')
+		# im.save("./temp/test_" + "{0:0=4d}".format(i), "JPEG")
+
+		image = np.asarray(img)
+
+		normalized_data = normalize(image)
+		flattened_vector = normalized_data.flatten()
 		usps_test_images[i] = flattened_vector
 
 		if (per_digit_label_counter == usps_per_digit_data):
@@ -56,13 +69,13 @@ def main():
 
 		per_digit_label_counter += 1
 		label = np.zeros(10)
-		label[image_label] = 1.0
+		label[image_label] = 1
 		usps_test_labels[i] = label
 		
 
 
 	# print(len(usps_test_images))
-	# print(len(usps_test_images[0]))
+	# print(usps_test_images[0])
 	# print(len(usps_test_labels))
 	# print(len(usps_test_labels[0]))
 
@@ -76,6 +89,14 @@ def main():
 	print('Classification accuracy: ', sess.run(accuracy, feed_dict = {x: ip, y_: op}))
 
 
+
+
+def normalize(data):
+	row_sums = data.sum(axis=1)
+	norm_matrix = np.divide(data, row_sums[:, np.newaxis]) #  increase the dimension of the existing array by one more dimension
+	normalized_data = 1 - norm_matrix
+	normalized_data[normalized_data < 1] = 0
+	return normalized_data
 
 if __name__ == '__main__':
 	main()
