@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
 import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 import numpy as np
 
 def main():
@@ -38,15 +39,16 @@ def main():
 	usps_data_count = 1500
 	usps_per_digit_data = 150
 	per_digit_label_counter = 0
-	usps_test_images = np.ndarray([usps_data_count, 784])
+	usps_test_images = np.ndarray([usps_data_count + 1, 784])
 	image_label = 0
-	usps_test_labels = np.ndarray([usps_data_count, 10])
+	usps_test_labels = np.ndarray([usps_data_count + 1, 10])
 
-	for i in range(usps_data_count, 1):
+	for i in range(usps_data_count, 0, -1):
 		file_path = './proj3_images/Test/test_' + "{0:0=4d}".format(i) + '.png'
 		img = mpimg.imread(file_path)
 		image = np.resize(img, (28,28))
-		usps_test_images[i] = image.flatten()
+		flattened_vector = image.flatten()
+		usps_test_images[i] = flattened_vector
 
 		if (per_digit_label_counter == usps_per_digit_data):
 			image_label += 1
@@ -54,22 +56,24 @@ def main():
 
 		per_digit_label_counter += 1
 		label = np.zeros(10)
-		label[image_label] = 1
+		label[image_label] = 1.0
 		usps_test_labels[i] = label
 		
 
 
-	print(len(usps_test_images))
-	print(len(usps_test_images[0]))
-	print(len(usps_test_labels))
-	print(len(usps_test_labels[0]))
+	# print(len(usps_test_images))
+	# print(len(usps_test_images[0]))
+	# print(len(usps_test_labels))
+	# print(len(usps_test_labels[0]))
 
-	ip = usps_test_images[0]
-	op = usps_test_labels[0]
+	ip = usps_test_images[1:1501]
+	# print('ip:',ip)
+	op = usps_test_labels[1:1501]
+	# print('label: ', op)
 
-	print('predicted_output: ', sess.run(predicted_output, feed_dict = {x: [ip], y_: [op]}))
-	print('expected_output: ', sess.run(expected_output, feed_dict = {x: [ip], y_: [op]}))
-	print('Classification accuracy: ', sess.run(accuracy, feed_dict = {x: [ip], y_: [op]}))
+	print('predicted_output: ', sess.run(predicted_output, feed_dict = {x: ip, y_: op}))
+	print('expected_output: ', sess.run(expected_output, feed_dict = {x: ip, y_: op}))
+	print('Classification accuracy: ', sess.run(accuracy, feed_dict = {x: ip, y_: op}))
 
 
 
