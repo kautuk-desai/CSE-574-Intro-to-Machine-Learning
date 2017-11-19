@@ -2,9 +2,8 @@ import tensorflow as tf
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
+import numpy as np
 from utilities import Utilities
-
 
 def main():
 	# initialize the utilites class. donwloads mnist data and initializes input variable x,
@@ -18,14 +17,14 @@ def main():
 	utility_obj.get_usps_data()
 
 	# create the logistic regression model, train using mnist data and test it using mnist and usps data set
-	# logistic_regression(utility_obj)
+	logistic_regression(utility_obj)
 
 	# create single layer neural network model, train using mnist and test it using mnist and usps
 	num_neurons = 100
 	# single_layer_nn(utility_obj,num_neurons)
 
 	# create convolutional neural network model, train using mnist and test it using mnist and usps
-	train_cnn(utility_obj)
+	# train_cnn(utility_obj)
 
 
 def logistic_regression(utility_obj):
@@ -33,14 +32,30 @@ def logistic_regression(utility_obj):
 	b = tf.Variable(tf.zeros([10])) # bias
 
 	y = tf.matmul(utility_obj.x_input, W) + b # logistic regression model
-	print('########## Logistic Regression Model Training ##########')
-	logistic_reg_accuracy, logistic_reg_sess = utility_obj.compute_model_training(y)
+	alphas = np.arange(0.05, 1.05, 0.05)
+	accuracy = np.zeros(len(alphas))
+
+	for index, value in enumerate(alphas):
+		print('########## Logistic Regression Model Training ##########')
+		utility_obj.learning_rate = value
+		logistic_reg_accuracy, logistic_reg_sess = utility_obj.compute_model_training(y)
+		accuracy[index] = logistic_reg_sess.run(logistic_reg_accuracy, feed_dict={utility_obj.x_input: utility_obj.usps_test_images,
+		utility_obj.y_labels: utility_obj.usps_test_labels})
+
+	plt.plot(alphas, accuracy)
+	plt.xticks(alphas)
+	plt.xlabel('Learning Rate')
+	plt.ylabel('Accuracy')
+	plt.title('Logistic Regression (USPS)')
+	plt.savefig('./plots/logistic_regression_alpha_vs_accuracy_usps.png')
 
 	print('MNIST Logistic Regression Accuracy =', logistic_reg_sess.run(
-		logistic_reg_accuracy, feed_dict={utility_obj.x_input: utility_obj.mnist.test.images, utility_obj.y_labels: utility_obj.mnist.test.labels}))
+		logistic_reg_accuracy, feed_dict={utility_obj.x_input: utility_obj.mnist.test.images,
+		utility_obj.y_labels: utility_obj.mnist.test.labels}))
 
 	print('USPS Logistic Regression Accuracy =', logistic_reg_sess.run(
-		logistic_reg_accuracy, feed_dict={utility_obj.x_input: utility_obj.usps_test_images, utility_obj.y_labels: utility_obj.usps_test_labels}))
+		logistic_reg_accuracy, feed_dict={utility_obj.x_input: utility_obj.usps_test_images,
+		utility_obj.y_labels: utility_obj.usps_test_labels}))
 	logistic_reg_sess.close()
 
 def single_layer_nn(utility_obj, num_neurons):
@@ -63,10 +78,10 @@ def single_layer_nn(utility_obj, num_neurons):
 	# print('neurons=', neurons)
 	# print('accuracy=', accuracy)
 	# plt.plot(neurons, accuracy)
-	# plt.title('Single Layer NN')
+	# plt.title('Single Layer NN (MNIST)')
 	# plt.ylabel('Accuracy')
 	# plt.xlabel('Number of Neurons')
-	# plt.savefig('./plots/neurons_vs_accuracy.png')
+	# plt.savefig('./plots/snn_neurons_vs_accuracy.png')
 
 	hidden_layer = tf.layers.dense(utility_obj.x_input, num_neurons, activation=tf.nn.relu)
 	h_1 = tf.layers.dense(hidden_layer, 10) # number of classes in which the data is to be classified
@@ -126,7 +141,7 @@ def train_cnn(utility_obj):
 	print('CNN USPS Accuracy = ', cnn_sess.run(cnn_accuracy,
 		feed_dict={utility_obj.x_input: utility_obj.usps_test_images,
 		utility_obj.y_labels: utility_obj.usps_test_labels, utility_obj.keep_prob: 1.0}))
-	
+
 	cnn_sess.close()
 
 
