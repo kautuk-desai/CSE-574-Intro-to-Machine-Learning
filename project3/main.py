@@ -32,22 +32,24 @@ def logistic_regression(utility_obj):
 	b = tf.Variable(tf.zeros([10])) # bias
 
 	y = tf.matmul(utility_obj.x_input, W) + b # logistic regression model
-	alphas = np.arange(0.05, 1.05, 0.05)
-	accuracy = np.zeros(len(alphas))
 
-	for index, value in enumerate(alphas):
-		print('########## Logistic Regression Model Training ##########')
-		utility_obj.learning_rate = value
-		logistic_reg_accuracy, logistic_reg_sess = utility_obj.compute_model_training(y)
-		accuracy[index] = logistic_reg_sess.run(logistic_reg_accuracy, feed_dict={utility_obj.x_input: utility_obj.usps_test_images,
-		utility_obj.y_labels: utility_obj.usps_test_labels})
+	## the below code is used for plotting
+	# alphas = np.arange(0.05, 1.05, 0.05)
+	# accuracy = np.zeros(len(alphas))
 
-	plt.plot(alphas, accuracy)
-	plt.xticks(alphas)
-	plt.xlabel('Learning Rate')
-	plt.ylabel('Accuracy')
-	plt.title('Logistic Regression (USPS)')
-	plt.savefig('./plots/logistic_regression_alpha_vs_accuracy_usps.png')
+	# for index, value in enumerate(alphas):
+	# 	print('########## Logistic Regression Model Training ##########')
+	# 	utility_obj.learning_rate = value
+	# 	logistic_reg_accuracy, logistic_reg_sess = utility_obj.compute_model_training(y)
+	# 	accuracy[index] = logistic_reg_sess.run(logistic_reg_accuracy, feed_dict={utility_obj.x_input: utility_obj.usps_test_images,
+	# 	utility_obj.y_labels: utility_obj.usps_test_labels})
+
+	# plt.plot(alphas, accuracy)
+	# plt.xticks(alphas)
+	# plt.xlabel('Learning Rate')
+	# plt.ylabel('Accuracy')
+	# plt.title('Logistic Regression (USPS)')
+	# plt.savefig('./plots/logistic_regression_alpha_vs_accuracy_usps.png')
 
 	print('MNIST Logistic Regression Accuracy =', logistic_reg_sess.run(
 		logistic_reg_accuracy, feed_dict={utility_obj.x_input: utility_obj.mnist.test.images,
