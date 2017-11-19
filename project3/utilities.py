@@ -6,12 +6,17 @@ from PIL import Image
 
 class Utilities:
 
-	def __init__(self, num_iterations, batch_size):
+	def __init__(self, num_iterations, batch_size, learning_rate):
 		self.num_iterations = num_iterations
 		self.batch_size = batch_size
+		self.learning_rate = learning_rate
+		self.optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
 		self.mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+		print('mnist train images: ', len(self.mnist.train.images))
 		self.y_labels = tf.placeholder(tf.float32, [None, 10])
-		self.x_input = tf.placeholder(tf.float32, [None, 784]) # input images in vector shape of 784
+		self.x_input = tf.placeholder(tf.float32, [None, 784])  # input images in vector shape of 784
+		self.keep_prob = tf.placeholder(tf.float32) # used for cnn neurons droping probability
+		self.nn = ''
 
 	def normalize(self, data):
 		row_sums = data.sum(axis=1)
@@ -56,21 +61,45 @@ class Utilities:
 	def compute_model_training(self, prediction):
 		cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
 			labels=self.y_labels, logits=prediction))
-		train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
+		train_step = self.optimizer.minimize(cross_entropy)
 
 		correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(self.y_labels, 1))
 		accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 		accuracy = tf.multiply(accuracy, 100)
-	
+
 		sess = tf.InteractiveSession()
 		tf.global_variables_initializer().run()
 		# this is for mini batch stochastic gradient descent
 		for i in range(self.num_iterations):
 			batch = self.mnist.train.next_batch(self.batch_size)
 			if (i % 5000 == 0):
-				train_accuracy = accuracy.eval(feed_dict={self.x_input: batch[0], self.y_labels: batch[1]})
+				if (self.nn == 'cnn'):
+					train_accuracy = accuracy.eval(feed_dict={self.x_input: batch[0], self.y_labels: batch[1], self.keep_prob: 0.5})
+				else:
+					train_accuracy = accuracy.eval(feed_dict={self.x_input: batch[0], self.y_labels: batch[1]})
+
 				print('step %d, training accuracy %g' % (i, train_accuracy))
-	
-			train_step.run(feed_dict={self.x_input: batch[0], self.y_labels: batch[1]})
-	
+
+			if (self.nn == 'cnn'):
+				train_step.run(feed_dict={self.x_input: batch[0], self.y_labels: batch[1], self.keep_prob: 0.5})
+			else:
+				train_step.run(feed_dict={self.x_input: batch[0], self.y_labels: batch[1]})
+
 		return accuracy, sess
+
+	def weight_variable(self, shape):
+		initial = tf.truncated_normal(shape, stddev=0.1)
+		return tf.Variable(initial)
+
+
+	def bias_variable(self, shape):
+		initial = tf.constant(0.1, shape=shape)
+		return tf.Variable(initial)
+
+
+	def conv2d(self, x, W):
+		return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+
+
+	def max_pool_2x2(self, x):
+		return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
