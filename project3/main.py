@@ -4,8 +4,16 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 from utilities import Utilities
+<<<<<<< HEAD
 
 def main():
+=======
+from groupmembers import print_group_members
+
+def main():
+	print_group_members()
+
+>>>>>>> e5ec83de46f0de1c97640e694748734d8edf81f3
 	# initialize the utilites class. donwloads mnist data and initializes input variable x,
 	# predicted output label valriable y_
 	num_iterations = 20000
@@ -21,10 +29,17 @@ def main():
 
 	# create single layer neural network model, train using mnist and test it using mnist and usps
 	num_neurons = 100
+<<<<<<< HEAD
 	# single_layer_nn(utility_obj,num_neurons)
 
 	# create convolutional neural network model, train using mnist and test it using mnist and usps
 	# train_cnn(utility_obj)
+=======
+	single_layer_nn(utility_obj,num_neurons)
+
+	# create convolutional neural network model, train using mnist and test it using mnist and usps
+	train_cnn(utility_obj)
+>>>>>>> e5ec83de46f0de1c97640e694748734d8edf81f3
 
 
 def logistic_regression(utility_obj):
@@ -51,6 +66,11 @@ def logistic_regression(utility_obj):
 	# plt.title('Logistic Regression (USPS)')
 	# plt.savefig('./plots/logistic_regression_alpha_vs_accuracy_usps.png')
 
+<<<<<<< HEAD
+=======
+	logistic_reg_accuracy, logistic_reg_sess = utility_obj.compute_model_training(y)
+
+>>>>>>> e5ec83de46f0de1c97640e694748734d8edf81f3
 	print('MNIST Logistic Regression Accuracy =', logistic_reg_sess.run(
 		logistic_reg_accuracy, feed_dict={utility_obj.x_input: utility_obj.mnist.test.images,
 		utility_obj.y_labels: utility_obj.mnist.test.labels}))
@@ -114,6 +134,7 @@ def train_cnn(utility_obj):
 
 	W_fc1 = utility_obj.weight_variable([7 * 7 * 64, 1024])
 	b_fc1 = utility_obj.bias_variable([1024])
+<<<<<<< HEAD
 
 	h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
 	h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
@@ -129,6 +150,23 @@ def train_cnn(utility_obj):
 
 	y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
 
+=======
+
+	h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
+	h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+
+	# drop random neurons to avoid overfitting
+	
+	h_fc1_drop = tf.nn.dropout(h_fc1, utility_obj.keep_prob)
+
+	# we now perform the prediction using the basic logistic approach to compute the softmax
+	# and then evaluating the output
+	W_fc2 = utility_obj.weight_variable([1024, 10])
+	b_fc2 = utility_obj.bias_variable([10])
+
+	y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
+
+>>>>>>> e5ec83de46f0de1c97640e694748734d8edf81f3
 	utility_obj.learning_rate = 1e-4
 	utility_obj.optimizer = tf.train.AdamOptimizer(utility_obj.learning_rate)
 	utility_obj.nn = 'cnn'
