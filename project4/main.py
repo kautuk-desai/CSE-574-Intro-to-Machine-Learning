@@ -40,8 +40,8 @@ def main():
 	print('Num test labels: ', len(celeba_test_labels))
 
 	utilities = Utilities(data_file_path)
-	celeba_train_images = utilities.load_images(1000,celeba_train_img_file_names)
-	celeba_test_images = utilities.load_images(1000, celeba_test_img_file_names)
+	celeba_train_images = utilities.load_images(training_count,celeba_train_img_file_names)
+	#celeba_test_images = utilities.load_images(1000, celeba_test_img_file_names)
 
 	print(celeba_train_images[0])
 	
