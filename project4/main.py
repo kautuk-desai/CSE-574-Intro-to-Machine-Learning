@@ -8,7 +8,6 @@ def main():
 	print_group_members()
 
 	feature_for_classification = 'Eyeglasses'
-	image_size = (28,28)
 	data_file_path = './data/img_align_celeba/'
 
 	## read label file
@@ -37,12 +36,12 @@ def main():
 
 	celeba_train_labels = predicted_output[0:training_count]
 	celeba_test_labels = predicted_output[training_count:dataset_count]
-	print('train labels: ', len(celeba_train_labels))
-	print('test labels: ', len(celeba_test_labels))
+	print('Num train labels: ', len(celeba_train_labels))
+	print('Num test labels: ', len(celeba_test_labels))
 
 	utilities = Utilities(data_file_path)
-	celeba_train_images = utilities.load_images(training_count)
-	celeba_test_images = utilities.load_images(test_count)
+	celeba_train_images = utilities.load_images(1000,celeba_train_img_file_names)
+	celeba_test_images = utilities.load_images(1000, celeba_test_img_file_names)
 
 	print(celeba_train_images[0])
 	
