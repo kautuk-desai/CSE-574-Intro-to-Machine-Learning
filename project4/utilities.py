@@ -11,10 +11,10 @@ class Utilities(object):
         self.file_path = file_path
         self.image_size = (28, 28)
         self.x_input = tf.placeholder(tf.float32, [None, 784])  # input images in vector shape of 784
-        self.y_labels = tf.placeholder(tf.float32, [None])
+        self.y_labels = tf.placeholder(tf.float32, [None,2])
         self.keep_prob = tf.placeholder(tf.float32)  # used for cnn neurons droping probability
+        self.batch_size = 1000
         self.num_iterations = 300
-        self.batch_size = 5000
         self.learning_rate = 1e-4
         self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
 
@@ -34,7 +34,7 @@ class Utilities(object):
         cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
             labels=self.y_labels, logits=prediction))
         train_step = self.optimizer.minimize(cross_entropy)
-
+        #print('prediction.shape : ',prediction.shape)
         correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(self.y_labels, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         accuracy = tf.multiply(accuracy, 100)
@@ -42,12 +42,12 @@ class Utilities(object):
         sess = tf.InteractiveSession()
         tf.global_variables_initializer().run()
         # this is for mini batch stochastic gradient descent
+        self.num_iterations = len(training_data) // self.batch_size
         for i in range(self.num_iterations):
-            input_batch = training_data[i*self.batch_size : (i+1)*self.batch_size]
-            output_label = training_label[i*self.batch_size : (i+1)*self.batch_size]
-            if (i % 5000 == 0):
-                train_accuracy = accuracy.eval(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.5})
-                print('step %d, training accuracy %g' % (i, train_accuracy))
+            input_batch = training_data[i*self.batch_size : min((i+1)*self.batch_size, len(training_data))]
+            output_label = training_label[i*self.batch_size : min((i+1)*self.batch_size, len(training_data))]
+            train_accuracy = accuracy.eval(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.5})
+            print('step %d, training accuracy %g' % (i, train_accuracy))
 
             train_step.run(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.5})
 
