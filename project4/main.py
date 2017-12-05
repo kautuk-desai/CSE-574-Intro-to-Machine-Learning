@@ -1,5 +1,4 @@
 import numpy as np
-import random
 from PIL import Image
 import tensorflow as tf
 from groupmembers import print_group_members
@@ -23,27 +22,33 @@ def main():
 	dataset_count = len(label)
 	training_count = int(0.8 * dataset_count)
 	test_count = int(0.2*dataset_count)
+	small_training_count = int(0.5 * training_count)
 	# python's random module isn’t made to deal with numpy arrays
 	# since it’s not exactly the same as nested python lists
 	np.random.shuffle(label)
 	image_file_names = label[:, 0]
-	predicted_output = label[:, 1]
-	b = predicted_output.astype(np.int).clip(min=0)
+	expected_output = label[:, 1]
+	b = expected_output.astype(np.int).clip(min=0)
 	one_hot_outputs = np.eye(2)[b]
-	# print(image_file_names)
+	print(image_file_names[0])
+	print(expected_output[0])
+	print(b[0])
+	print(one_hot_outputs[0])
+	a = Image.open('./data/img_align_celeba/' + image_file_names[0])
+	a.show()
 
-	celeba_train_img_file_names = image_file_names[0:training_count]
+	celeba_train_img_file_names = image_file_names[0:small_training_count]
 	celeba_test_img_file_names = image_file_names[training_count+1:dataset_count]
 	# print('train image count: ', len(celeba_train_img_file_names))
 	# print('test image count: ', len(celeba_test_img_file_names))
 
-	celeba_train_labels = one_hot_outputs[0:training_count]
+	celeba_train_labels = one_hot_outputs[0:small_training_count]
 	celeba_test_labels = one_hot_outputs[training_count:dataset_count]
 	print('Num train labels: ', len(celeba_train_labels))
 	print('Num test labels: ', len(celeba_test_labels))
 
 	utilities = Utilities(data_file_path)
-	celeba_train_images = utilities.load_images(training_count,celeba_train_img_file_names)
+	celeba_train_images = utilities.load_images(small_training_count,celeba_train_img_file_names)
 	celeba_test_images = utilities.load_images(test_count, celeba_test_img_file_names)
 
 	print('Model training started...')
@@ -83,6 +88,23 @@ def train_cnn(utility_obj, training_data, training_label,celeba_test_images,cele
 
 	cnn_accuracy, cnn_sess = utility_obj.compute_model_training(y_conv, training_data, training_label)
 
+
+	## just for fun we asked the model whether it can correctly classify group members
+	# group_members_img = ['kautuk_desai.jpg','ub_directory.jpg']
+	# group_members_labels = np.eye(2)[np.transpose([1,1])]
+	
+	# for i in range(len(group_members_img)):
+	# 	im = Image.open('./data/group_members/' + group_members_img[i])
+	# 	im = im.convert(mode='L')
+	# 	resized_im = im.resize(utility_obj.image_size)
+	# 	# resized_im.show()
+	# 	flattened_im = np.asarray(resized_im).flatten()
+		
+	# 	group_member = cnn_sess.run(cnn_accuracy,feed_dict={utility_obj.x_input: [flattened_im],
+	# 		utility_obj.y_labels: [group_members_labels[i]], utility_obj.keep_prob: 1.0})
+
+	# 	print('Classified ',group_members_img[i],' with Accuracy = ', group_member)
+
 	test_batch_size = 1000
 	test_data_size = len(celeba_test_labels)
 	testing_batch_iterations = test_data_size // test_batch_size
@@ -96,7 +118,9 @@ def train_cnn(utility_obj, training_data, training_label,celeba_test_images,cele
 
 		test_accuracy = test_accuracy+batch_test_accuracy
 		print('Testing batch = ',i,' Accuracy = ', batch_test_accuracy)
-	print('Test data Accuracy = ', test_accuracy/testing_batch_iterations)	
+	print('Test data Accuracy = ', test_accuracy/testing_batch_iterations)
+
+	
 
 	cnn_sess.close()
 

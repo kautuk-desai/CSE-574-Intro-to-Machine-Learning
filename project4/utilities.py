@@ -52,9 +52,9 @@ class Utilities(object):
                 output_label = training_label[i*self.batch_size : min((i+1)*self.batch_size, training_data_count)]
                 # train_accuracy = accuracy.eval(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.5})
                 # print('step %d, training accuracy %g' % (i, train_accuracy))
-                train_step.run(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.5})
+                train_step.run(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.6})
 
-            train_accuracy = accuracy.eval(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.5})
+            train_accuracy = accuracy.eval(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.6})
             print('Epoch %d completed. Accuracy: %0.2f' %(j, train_accuracy))
 
         return accuracy, sess
