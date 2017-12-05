@@ -14,9 +14,9 @@ class Utilities(object):
         self.y_labels = tf.placeholder(tf.float32, [None,2])
         self.keep_prob = tf.placeholder(tf.float32)  # used for cnn neurons droping probability
         self.batch_size = 1000
-        self.num_iterations = 300
-        self.learning_rate = 1e-4
+        self.learning_rate = 1e-3
         self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
+        self.num_epochs = 10
 
     def load_images(self, num_images, file_names):
         data = [[]] * num_images
@@ -34,7 +34,6 @@ class Utilities(object):
         cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
             labels=self.y_labels, logits=prediction))
         train_step = self.optimizer.minimize(cross_entropy)
-        #print('prediction.shape : ',prediction.shape)
         correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(self.y_labels, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         accuracy = tf.multiply(accuracy, 100)
@@ -42,14 +41,21 @@ class Utilities(object):
         sess = tf.InteractiveSession()
         tf.global_variables_initializer().run()
         # this is for mini batch stochastic gradient descent
-        self.num_iterations = len(training_data) // self.batch_size
-        for i in range(self.num_iterations):
-            input_batch = training_data[i*self.batch_size : min((i+1)*self.batch_size, len(training_data))]
-            output_label = training_label[i*self.batch_size : min((i+1)*self.batch_size, len(training_data))]
-            train_accuracy = accuracy.eval(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.5})
-            print('step %d, training accuracy %g' % (i, train_accuracy))
+        training_data_count = len(training_data)
+        num_iterations =  training_data_count // self.batch_size
+        input_batch = []
+        output_label = []
+        for j in range(self.num_epochs):
+            print('Epoch %d started...' %j)
+            for i in range(num_iterations):
+                input_batch = training_data[i*self.batch_size : min((i+1)*self.batch_size, training_data_count)]
+                output_label = training_label[i*self.batch_size : min((i+1)*self.batch_size, training_data_count)]
+                # train_accuracy = accuracy.eval(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.5})
+                # print('step %d, training accuracy %g' % (i, train_accuracy))
+                train_step.run(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.5})
 
-            train_step.run(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.5})
+            train_accuracy = accuracy.eval(feed_dict={self.x_input: input_batch, self.y_labels: output_label, self.keep_prob: 0.5})
+            print('Epoch %d completed. Accuracy: %0.2f' %(j, train_accuracy))
 
         return accuracy, sess
 

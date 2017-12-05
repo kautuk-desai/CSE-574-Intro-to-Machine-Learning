@@ -46,8 +46,7 @@ def main():
 	celeba_train_images = utilities.load_images(training_count,celeba_train_img_file_names)
 	celeba_test_images = utilities.load_images(test_count, celeba_test_img_file_names)
 
-	print(len(celeba_train_images))
-
+	print('Model training started...')
 	train_cnn(utilities, celeba_train_images, celeba_train_labels,celeba_test_images,celeba_test_labels)
 
 
@@ -94,6 +93,7 @@ def train_cnn(utility_obj, training_data, training_label,celeba_test_images,cele
 		target_labels_batch = celeba_test_labels[i*test_batch_size : min((i+1)*test_batch_size, test_data_size)]
 		batch_test_accuracy = cnn_sess.run(cnn_accuracy,feed_dict={utility_obj.x_input: test_images_batch,
 		utility_obj.y_labels: target_labels_batch, utility_obj.keep_prob: 1.0})
+
 		test_accuracy = test_accuracy+batch_test_accuracy
 		print('Testing batch = ',i,' Accuracy = ', batch_test_accuracy)
 	print('Test data Accuracy = ', test_accuracy/testing_batch_iterations)	
