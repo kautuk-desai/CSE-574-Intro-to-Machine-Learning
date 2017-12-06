@@ -32,10 +32,7 @@ def main():
 	expected_output = label[:, 1]
 	b = expected_output.astype(np.int).clip(min=0)
 	one_hot_outputs = np.eye(2)[b]
-
-	print('augmenting data..')
-	utilities.augmentation_count = 10
-	augmented_imgs, augmented_labels = utilities.data_augmentation(label)
+		
 	# print(image_file_names[0])
 	# print(expected_output[0])
 	# print(b[0])
@@ -51,10 +48,13 @@ def main():
 
 	utilities = Utilities(data_file_path)
 	celeba_train_images = utilities.load_images(small_training_count, celeba_train_img_file_names)
+	celeba_test_images = utilities.load_images(test_count, celeba_test_img_file_names)
+
+	print('augmenting data..')
+	utilities.augmentation_count = 10
+	augmented_imgs, augmented_labels = utilities.data_augmentation(label)
 	celeba_train_images = np.append(celeba_train_images, augmented_imgs, axis=0)
 	celeba_train_labels = np.append(celeba_train_labels, augmented_labels, axis=0)
-
-	celeba_test_images = utilities.load_images(test_count, celeba_test_img_file_names)
 
 	print('Num train data: ', len(celeba_train_images))
 	print('Num test data: ', len(celeba_test_images))

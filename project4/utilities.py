@@ -25,14 +25,17 @@ class Utilities(object):
 
 	def load_images(self, num_images, file_names):
 		data = [[]] * num_images
+		angle_dir = 1
 		for i in range(num_images):
 			im = Image.open(self.file_path + file_names[i])
 			im = im.convert(mode='L')
+			
+			# rotate the image by -90 or 90. This is done for generating augmented data.
 			if (self.augment_data):
-				im = im.rotate(90)
-				im.show()
+				im = im.rotate(angle_dir*90)
+				angle_dir = -1 * angle_dir
+
 			resized_im = im.resize(self.image_size)
-			# resized_im.show()
 			flattened_im = np.asarray(resized_im).flatten()
 			data[i] = flattened_im
 
