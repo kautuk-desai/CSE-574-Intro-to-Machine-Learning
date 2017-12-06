@@ -23,7 +23,8 @@ def main():
 	dataset_count = len(label)
 	training_count = int(0.8 * dataset_count)
 	test_count = int(0.2 * dataset_count)
-	small_training_count = int(0.01 * training_count)
+	small_training_count = training_count ##int(0.01 * training_count)
+	
 	# python's random module isn’t made to deal with numpy arrays
 	# since it’s not exactly the same as nested python lists
 	np.random.seed(20)
@@ -98,35 +99,35 @@ def train_cnn(utility_obj, training_data, training_label, celeba_test_images, ce
 	cnn_accuracy, cnn_sess = utility_obj.compute_model_training(y_conv, training_data, training_label)
 
 	# just for fun we asked the model whether it can correctly classify group members
-	# group_members_img = ['kautuk_desai.jpg','ub_directory.jpg']
-	# group_members_labels = np.eye(2)[np.transpose([1,1])]
+	group_members_img = ['kautuk_desai.jpg','ub_directory.jpg']
+	group_members_labels = np.eye(2)[np.transpose([1,1])]
 
-	# for i in range(len(group_members_img)):
-	# 	im = Image.open('./data/group_members/' + group_members_img[i])
-	# 	im = im.convert(mode='L')
-	# 	resized_im = im.resize(utility_obj.image_size)
-	# 	# resized_im.show()
-	# 	flattened_im = np.asarray(resized_im).flatten()
+	for i in range(len(group_members_img)):
+		im = Image.open('./data/group_members/' + group_members_img[i])
+		im = im.convert(mode='L')
+		resized_im = im.resize(utility_obj.image_size)
+		# resized_im.show()
+		flattened_im = np.asarray(resized_im).flatten()
 
-	# 	group_member = cnn_sess.run(cnn_accuracy,feed_dict={utility_obj.x_input: [flattened_im],
-	# 		utility_obj.y_labels: [group_members_labels[i]], utility_obj.keep_prob: 1.0})
+		group_member = cnn_sess.run(cnn_accuracy,feed_dict={utility_obj.x_input: [flattened_im],
+			utility_obj.y_labels: [group_members_labels[i]], utility_obj.keep_prob: 1.0})
 
-	# 	print('Classified ',group_members_img[i],' with Accuracy = ', group_member)
+		print('Classified ',group_members_img[i],' with Accuracy = ', group_member)
 
-	test_batch_size = 100
-	test_data_size = len(celeba_test_labels)
-	testing_batch_iterations = test_data_size // test_batch_size
-	test_accuracy = 0.0
-	print('Testing now..')
-	for i in range(testing_batch_iterations):
-		test_images_batch = celeba_test_images[i * test_batch_size: min((i + 1) * test_batch_size, test_data_size)]
-		target_labels_batch = celeba_test_labels[i * test_batch_size: min((i + 1) * test_batch_size, test_data_size)]
-		batch_test_accuracy = cnn_sess.run(cnn_accuracy, feed_dict={utility_obj.x_input: test_images_batch,
-																	utility_obj.y_labels: target_labels_batch, utility_obj.keep_prob: 1.0})
+	# test_batch_size = 100
+	# test_data_size = len(celeba_test_labels)
+	# testing_batch_iterations = test_data_size // test_batch_size
+	# test_accuracy = 0.0
+	# print('Testing now..')
+	# for i in range(testing_batch_iterations):
+	# 	test_images_batch = celeba_test_images[i * test_batch_size: min((i + 1) * test_batch_size, test_data_size)]
+	# 	target_labels_batch = celeba_test_labels[i * test_batch_size: min((i + 1) * test_batch_size, test_data_size)]
+	# 	batch_test_accuracy = cnn_sess.run(cnn_accuracy, feed_dict={utility_obj.x_input: test_images_batch,
+	# 																utility_obj.y_labels: target_labels_batch, utility_obj.keep_prob: 1.0})
 
-		test_accuracy = test_accuracy + batch_test_accuracy
-		#print('Testing batch = ',i,' Accuracy = ', batch_test_accuracy)
-	print('Test data Accuracy = ', test_accuracy / testing_batch_iterations)
+	# 	test_accuracy = test_accuracy + batch_test_accuracy
+	# 	#print('Testing batch = ',i,' Accuracy = ', batch_test_accuracy)
+	# print('Test data Accuracy = ', test_accuracy / testing_batch_iterations)
 
 	cnn_sess.close()
 
