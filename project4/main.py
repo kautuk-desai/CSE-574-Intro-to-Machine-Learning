@@ -21,8 +21,8 @@ def main():
 	label = np.genfromtxt(label_file_name, dtype= 'str',skip_header=2, usecols=(0, feature_col_index))
 	dataset_count = len(label)
 	training_count = int(0.8 * dataset_count)
-	test_count = int(0.2*dataset_count)
-	small_training_count = int(0.5 * training_count)
+	test_count = int(0.2 * dataset_count)
+	# small_training_count = int(0.5 * training_count)
 	# python's random module isn’t made to deal with numpy arrays
 	# since it’s not exactly the same as nested python lists
 	np.random.shuffle(label)
@@ -30,25 +30,25 @@ def main():
 	expected_output = label[:, 1]
 	b = expected_output.astype(np.int).clip(min=0)
 	one_hot_outputs = np.eye(2)[b]
-	print(image_file_names[0])
-	print(expected_output[0])
-	print(b[0])
-	print(one_hot_outputs[0])
-	a = Image.open('./data/img_align_celeba/' + image_file_names[0])
-	a.show()
+	# print(image_file_names[0])
+	# print(expected_output[0])
+	# print(b[0])
+	# print(one_hot_outputs[0])
+	# a = Image.open('./data/img_align_celeba/' + image_file_names[0])
+	# a.show()
 
-	celeba_train_img_file_names = image_file_names[0:small_training_count]
-	celeba_test_img_file_names = image_file_names[training_count+1:dataset_count]
+	celeba_train_img_file_names = image_file_names[0:training_count]
+	celeba_test_img_file_names = image_file_names[training_count:dataset_count]
 	# print('train image count: ', len(celeba_train_img_file_names))
 	# print('test image count: ', len(celeba_test_img_file_names))
 
-	celeba_train_labels = one_hot_outputs[0:small_training_count]
+	celeba_train_labels = one_hot_outputs[0:training_count]
 	celeba_test_labels = one_hot_outputs[training_count:dataset_count]
 	print('Num train labels: ', len(celeba_train_labels))
 	print('Num test labels: ', len(celeba_test_labels))
 
 	utilities = Utilities(data_file_path)
-	celeba_train_images = utilities.load_images(small_training_count,celeba_train_img_file_names)
+	celeba_train_images = utilities.load_images(training_count,celeba_train_img_file_names)
 	celeba_test_images = utilities.load_images(test_count, celeba_test_img_file_names)
 
 	print('Model training started...')
@@ -58,7 +58,7 @@ def main():
 def train_cnn(utility_obj, training_data, training_label,celeba_test_images,celeba_test_labels):
 	W_conv1 = utility_obj.weight_variable([5, 5, 1, 32])
 	b_conv1 = utility_obj.bias_variable([32])
-	x_image = tf.reshape(utility_obj.x_input, [-1, 28, 28, 1])
+	x_image = tf.reshape(utility_obj.x_input, [-1, 56, 56, 1])
 	h_conv1 = tf.nn.relu(utility_obj.conv2d(x_image, W_conv1) + b_conv1)
 	h_pool1 = utility_obj.max_pool_2x2(h_conv1)
 

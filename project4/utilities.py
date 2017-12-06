@@ -9,8 +9,8 @@ class Utilities(object):
     def __init__(self, file_path):
         super(Utilities, self).__init__()
         self.file_path = file_path
-        self.image_size = (28, 28)
-        self.x_input = tf.placeholder(tf.float32, [None, 784])  # input images in vector shape of 784
+        self.image_size = (56, 56)
+        self.x_input = tf.placeholder(tf.float32, [None, 3136])  # input images in vector shape of 784
         self.y_labels = tf.placeholder(tf.float32, [None,2])
         self.keep_prob = tf.placeholder(tf.float32)  # used for cnn neurons droping probability
         self.batch_size = 1000
