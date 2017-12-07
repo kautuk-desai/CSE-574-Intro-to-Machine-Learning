@@ -11,4 +11,4 @@ one known as the Learning to Rank (LeToR) problem.
 Project 3: Classification
 
 Project 4: Introduction to Deep Learning
-           In the previous assignment we learnt how to implement a Convolutional Neural Network on MNIST images. In this project we extend our understanding of CNN and implement a model for classifying CelebA data set to determine whether the person in a portrait image is wearing eyeglasses or not. The task here is to tune hyperparameters and apply regularization to improve performance.
+In the previous assignment we learnt how to implement a Convolutional Neural Network on MNIST images. In this project we extend our understanding of CNN and implement a model for classifying CelebA data set to determine whether the person in a portrait image is wearing eyeglasses or not. The task here is to tune hyperparameters and apply regularization to improve performance.
